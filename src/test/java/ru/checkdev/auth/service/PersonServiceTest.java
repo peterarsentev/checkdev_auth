@@ -1,10 +1,10 @@
 package ru.checkdev.auth.service;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import ru.checkdev.auth.domain.Profile;
 import ru.checkdev.auth.repository.PersonRepository;
 
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
  * @since 21.09.2016
  */
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class PersonServiceTest {
     @InjectMocks
     private PersonService service;
@@ -28,7 +28,6 @@ public class PersonServiceTest {
     @Mock
     private PersonRepository persons;
 
-    @AfterEach
     @Test
     public void whenRegDuplicatePersonThenResultEmpty() {
         Profile profile = new Profile("Петр Арсентьев", "parsentev@yandex.ru", "password");

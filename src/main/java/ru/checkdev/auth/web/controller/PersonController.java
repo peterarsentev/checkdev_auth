@@ -8,14 +8,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.checkdev.auth.domain.Profile;
 import ru.checkdev.auth.service.PersonService;
 import ru.checkdev.auth.service.RoleService;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.HashMap;
@@ -83,8 +83,7 @@ public class PersonController {
     @SuppressWarnings("unchecked")
     @PostMapping("/updateMultipart")
     public ResponseEntity<String> update(@RequestPart Profile profile, @RequestPart(required = false) MultipartFile file, Principal user) throws ServletException, IOException {
-        String email = ((Map<String, String>) ((OAuth2Authentication) user)
-                .getUserAuthentication().getDetails()).get("username");
+        String email = user.getName();
         profile.setEmail(email);
         return new ResponseEntity<>(persons.update(email, file, profile), HttpStatus.OK);
     }
@@ -106,8 +105,7 @@ public class PersonController {
 
     @PutMapping("/changePassword")
     public void changePassword(@RequestBody Profile profile, Principal user) {
-        String email = ((Map<String, String>) ((OAuth2Authentication) user)
-                .getUserAuthentication().getDetails()).get("username");
+        String email = user.getName();
         persons.changePassword(profile, email);
     }
 

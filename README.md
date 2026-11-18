@@ -1,186 +1,84 @@
-## checkdev_auth
+# CheckDev Auth
 
-### Описание проекта
+Сервис пользователей, регистрации и авторизации. Java 21, Spring Boot 4.1.2, Spring Security 7 с JWT, PostgreSQL, Liquibase, springdoc 3.2.0. Для первого запуска нужны только auth и PostgreSQL.
 
-`checkdev_auth` — это микросервис авторизации и управления пользователями, построенный на базе **Spring Boot**, **Spring Security** и **Spring Data JPA**.
-Он обеспечивает аутентификацию, регистрацию, хранение профилей пользователей, работу с фотографиями и управление ролями.
-Сервис может использоваться как часть микросервисной экосистемы CheckDev и интегрироваться с другими модулями через REST API.
+## Проверка и сборка
 
+Нужны JDK 21 и Maven 3.6.3 или новее. Команды выполняются из корня `checkdev_auth`.
 
-### Основные возможности
-
-* **Регистрация и авторизация** пользователей.
-* Поддержка **OAuth2** (через `OAuthCall` и `UserDetailsDefinition`).
-* **Управление ролями и правами** доступа (Role, RoleService, SecurityConfig).
-* **Работа с профилями** (Profile, ProfileService, ProfileController).
-* **Хранение и загрузка фотографий** (Photo, DownloadController).
-* **CORS-фильтрация** для разрешения междоменных запросов.
-* **Liquibase** для управления миграциями БД.
-
-
-### Архитектура
-
-```
-ru.checkdev.auth/
-├── AuthSrv.java                 # Точка входа (Spring Boot)
-├── config/                      # Конфигурации безопасности
-│   └── SecurityConfig.java
-├── domain/                      # JPA-сущности
-│   ├── Photo.java
-│   ├── Profile.java
-│   └── Role.java
-├── dto/                         # Data Transfer Objects
-│   ├── ProfileDTO.java
-│   └── ProfileTgDTO.java
-├── filter/                      # Кастомные фильтры
-│   └── CorsFilter.java
-├── repository/                  # Spring Data JPA репозитории
-│   ├── PersonRepository.java
-│   ├── PhotoRepository.java
-│   └── RoleRepository.java
-├── service/                     # Бизнес-логика
-│   ├── PersonService.java
-│   ├── PhotoService.java
-│   ├── ProfileService.java
-│   └── RoleService.java
-├── util/                        # Вспомогательные классы
-│   ├── OAuthCall.java
-│   ├── PhotoMainClass.java
-│   └── UserDetailsDefinition.java
-└── web/controller/              # REST-контроллеры
-    ├── AuthController.java
-    ├── DownloadController.java
-    ├── PersonController.java
-    └── ProfileController.java
+```powershell
+mvn clean verify
 ```
 
+По умолчанию тесты используют H2 в режиме PostgreSQL и применяют реальные миграции Liquibase. Для проверки на отдельной PostgreSQL можно передать `TEST_DB_URL`, `TEST_DB_USERNAME`, `TEST_DB_PASSWORD`, `TEST_DDL_AUTO=validate`. Используйте только тестовую базу: существующие repository-тесты очищают таблицы в своих транзакциях.
 
-### Используемые технологии
+## Запуск
 
-| Компонент                       | Назначение                     |
-| ------------------------------- | ------------------------------ |
-| **Java 17+**                    | Язык реализации                |
-| **Spring Boot**                 | Фреймворк приложения           |
-| **Spring Security**             | Аутентификация и авторизация   |
-| **Spring Data JPA (Hibernate)** | Работа с базой данных          |
-| **Liquibase**                   | Управление миграциями БД       |
-| **Maven**                       | Система сборки                 |
-| **Jenkins**                     | CI/CD (согласно `Jenkinsfile`) |
-| **REST API**                    | Общение с внешними сервисами   |
-| **Logback**                     | Логирование                    |
+Откройте два терминала в корне `checkdev_auth`. В первом поднимите PostgreSQL:
 
-
-### Конфигурация приложения
-
-`src/main/resources/application.properties` (пример):
-
-```properties
-spring.application.name=auth
-server.port=9010
-
-spring.datasource.url=jdbc:postgresql://localhost:5432/checkdev_auth
-spring.datasource.username=postgres
-spring.datasource.password=postgres
-spring.jpa.hibernate.ddl-auto=validate
-spring.liquibase.change-log=classpath:db/db.changelog-master.xml
-
-spring.security.user.name=admin
-spring.security.user.password=admin
-
-eureka.client.service-url.defaultZone=http://localhost:9009/eureka
+```powershell
+docker-compose up
 ```
 
+Дождитесь готовности базы и оставьте терминал работать. Во втором запустите приложение:
 
-### База данных
-
-* **ORM:** Hibernate (через Spring Data JPA)
-* **Миграции:** Liquibase (`src/main/resources/db/db.changelog-master.xml`)
-* **Основные таблицы:**
-
-    * `profile` — данные пользователей
-    * `role` — роли
-    * `photo` — изображения профиля
-
-
-### API (основные эндпоинты)
-
-| Метод                 | Путь                            | Назначение |
-| --------------------- | ------------------------------- | ---------- |
-| `POST /auth/login`    | Авторизация пользователя        |            |
-| `POST /auth/register` | Регистрация нового пользователя |            |
-| `GET /profile/{id}`   | Получение профиля               |            |
-| `PUT /profile/{id}`   | Обновление профиля              |            |
-| `GET /photo/{id}`     | Получение фотографии            |            |
-| `POST /photo/upload`  | Загрузка новой фотографии       |            |
-
-*(точные пути могут отличаться, в зависимости от аннотаций в контроллерах)*
-
-
-### Как запустить проект локально
-
-#### 1. Сборка проекта
-
-```bash
-mvn clean package
-```
-
-#### 2. Запуск приложения
-
-```bash
-java -jar target/checkdev_auth-0.0.1-SNAPSHOT.jar
-```
-
-или:
-
-```bash
+```powershell
 mvn spring-boot:run
 ```
 
-#### 3. Доступ
+Откройте `http://localhost:9900/` — приложение перенаправит в Swagger UI. Kubernetes и остальные сервисы для этой практики не требуются.
 
-После запуска сервис будет доступен по адресу:
-[http://localhost:9010](http://localhost:9010)
+Compose поднимает PostgreSQL 17: база `cd_auth`, пользователь `postgres`, пароль `password`, доступ с компьютера по `localhost:5433`. Эти параметры уже стоят в настройках auth. Liquibase автоматически применяет миграции. Данные сохраняются в Docker volume `checkdev-auth-postgres-data` между перезапусками контейнера. Порт 5433 выбран, чтобы не занимать порт локального PostgreSQL 5432.
 
+В корне материалов курса также есть `docker-compose.yml`, использующий то же определение базы. Команду Maven выполняйте из корня репозитория auth, где находится `pom.xml`. Если нужен фоновый запуск базы, используйте `docker-compose up -d`.
 
-### Jenkins (CI/CD)
+Остановка: Ctrl+C в терминале приложения и Ctrl+C в терминале Compose. `docker-compose down` удаляет контейнер и сеть, сохраняя volume с пользователями.
 
-Файл `Jenkinsfile` используется для автоматической сборки и деплоя.
-Обычно включает стадии:
+Адрес и учетные данные БД можно переопределить через `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; публичный адрес auth — через `AUTH_PUBLIC_URL`. Для стандартного запуска выше дополнительные переменные не нужны.
 
-1. **Build** — `mvn clean package`
-2. **Test** — запуск юнит-тестов
-3. **Deploy** — публикация артефакта (например, в Docker Registry или на сервер)
+## Регистрация и проверка через Swagger
 
+1. Откройте `http://localhost:9900/swagger-ui/index.html`.
+2. Выполните `POST /registration` с JSON:
 
-### Развёртывание в Docker (пример)
-
-```dockerfile
-FROM openjdk:17-jdk-slim
-WORKDIR /app
-COPY target/checkdev_auth-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 9010
-ENTRYPOINT ["java", "-jar", "app.jar"]
+```json
+{
+  "username": "Анна",
+  "email": "anna@example.com",
+  "password": "Study-password-2026",
+  "privacy": true
+}
 ```
 
-Сборка:
+Ответ — `201` с `id`, `username`, `email`, без пароля. В этой учебной версии пользователь активен сразу, письмо подтверждения не отправляется. Повторный email, в том числе в другом регистре, возвращает `409`. Ошибки формата, короткий пароль и отсутствие согласия — `400`. Пароль должен иметь 8–72 символа и занимать не более 72 байт UTF-8; хранится BCrypt-хеш. Email нормализуется в нижний регистр.
 
-```bash
-docker build -t checkdev-auth .
+3. До авторизации выполните `GET /user`: ожидается `401`.
+4. Раскройте `POST /login`, нажмите **Try it out** и отправьте email и пароль зарегистрированного пользователя:
+
+```json
+{
+  "email": "anna@example.com",
+  "password": "Study-password-2026"
+}
 ```
 
-Запуск:
+Успешный ответ — `200`:
 
-```bash
-docker run -p 9010:9010 checkdev-auth
+```json
+{
+  "access_token": "<JWT>",
+  "token_type": "Bearer",
+  "expires_in": 900
+}
 ```
 
+Неверный пароль, неизвестный email и неактивная учетная запись дают одинаковый ответ `401`. Некорректный запрос — `400`. Формы входа, OAuth-переходов и HTTP-сессии в auth нет.
 
-### Интеграция с Eureka
+5. Скопируйте значение `access_token`, нажмите **Authorize** и вставьте его в поле **Value** без префикса `Bearer`. Повторите `GET /user`: ожидается `200` с тем же `id` и email. Swagger сам добавляет заголовок `Authorization: Bearer <JWT>`.
+6. Нажмите **Logout** в окне **Authorize** Swagger и повторите `GET /user`: ожидается `401`. Logout удаляет токен из Swagger, но не отзывает его на сервере. Для проверки неверного пароля просто повторите `POST /login` с другим паролем.
 
-Для регистрации в Eureka Server (например, `cd_eureka` на порту 9009):
+JWT подписывается RSA-SHA256 (RS256) и действует 15 минут. API проверяет подпись, издателя и срок действия. Refresh token пока не реализован: новый JWT получают повторным вызовом `POST /login`. OpenAPI JSON доступен по `/v3/api-docs`. Старые `/oauth/token` и `/oauth2/token` удалены; site адаптирован к этому контракту: формы `/registration` и `/login`, после входа — `/account`. Сервис уведомлений не изменялся.
 
-```properties
-eureka.client.register-with-eureka=true
-eureka.client.fetch-registry=true
-eureka.client.service-url.defaultZone=http://localhost:9009/eureka
-```
+## Граница первого упражнения
+
+Это автономный учебный запуск одного экземпляра auth. Подписывающий ключ создается в памяти при старте: после перезапуска прежние JWT недействительны, нужно войти заново. Пользователи сохраняются в PostgreSQL. Для нескольких реплик нужен общий устойчивый ключ. Отзыв токенов и refresh token в первый этап не входят. Вне локального учебного запуска API должен работать через HTTPS.

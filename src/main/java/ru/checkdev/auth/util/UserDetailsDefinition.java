@@ -12,6 +12,7 @@ import ru.checkdev.auth.domain.Profile;
 import ru.checkdev.auth.repository.PersonRepository;
 
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Component
 @AllArgsConstructor
@@ -21,10 +22,10 @@ public class UserDetailsDefinition implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(final String email) throws DisabledException {
-        Profile profile = persons.findByEmail(email);
+        Profile profile = persons.findByEmail(email.trim().toLowerCase(Locale.ROOT));
         if (profile != null) {
             if (profile.isActive()) {
-                return new User(email,
+                return new User(profile.getEmail(),
                         profile.getPassword(),
                         profile.getRoles().stream()
                                 .map(

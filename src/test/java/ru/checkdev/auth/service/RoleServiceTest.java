@@ -3,7 +3,8 @@ package ru.checkdev.auth.service;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import ru.checkdev.auth.domain.Role;
 import ru.checkdev.auth.repository.RoleRepository;
 
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.when;
  * @author parsentev
  * @since 21.09.2016
  */
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class RoleServiceTest {
     @InjectMocks
     private RoleService service;

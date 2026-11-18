@@ -1,6 +1,6 @@
 package ru.checkdev.auth.service;
 
-import com.google.common.collect.Lists;
+import java.util.stream.StreamSupport;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.checkdev.auth.domain.Role;
@@ -24,6 +24,6 @@ public class RoleService {
     }
 
     public List<Role> findAll() {
-        return Lists.newArrayList(this.roles.findAll());
+        return StreamSupport.stream(this.roles.findAll().spliterator(), false).toList();
     }
 }

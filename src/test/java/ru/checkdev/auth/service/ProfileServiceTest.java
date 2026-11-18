@@ -3,7 +3,8 @@ package ru.checkdev.auth.service;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import ru.checkdev.auth.dto.ProfileDTO;
 import ru.checkdev.auth.repository.PersonRepository;
 
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.when;
  * @version 01:11
  */
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class ProfileServiceTest {
     private static final int ID_OK = 1;
     @Mock

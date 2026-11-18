@@ -42,10 +42,10 @@ public interface PersonRepository extends CrudRepository<Profile, Integer> {
 
     Page findByEmailContainingOrUsernameContaining(String email, String userName, Pageable pageable);
 
-    @Query("select new ru.checkdev.auth.domain.Profile(p.key, p.experience, p.salary, p.aboutShort, p.username, p.location, p.photo.id) from profile as p left JOIN p.photo where p.show is ?1 order by p.updated desc")
+    @Query("select new ru.checkdev.auth.domain.Profile(p.key, p.experience, p.salary, p.aboutShort, p.username, p.location, p.photo.id) from profile as p left JOIN p.photo where p.show = ?1 order by p.updated desc")
     List<Profile> findByShow(boolean show, Pageable pageable);
 
-    @Query("select new ru.checkdev.auth.domain.Profile(p.key, p.experience, p.salary, p.aboutShort, p.username, p.location, p.photo.id) from profile as p left JOIN p.photo where p.show is ?1 order by p.updated desc")
+    @Query("select new ru.checkdev.auth.domain.Profile(p.key, p.experience, p.salary, p.aboutShort, p.username, p.location, p.photo.id) from profile as p left JOIN p.photo where p.show = ?1 order by p.updated desc")
     List<Profile> findByShow(boolean show);
 
     @Query("select count(p.id) from profile as p where p.show is true")

@@ -1,9 +1,9 @@
 package ru.checkdev.auth.service;
 
-import com.google.common.collect.Lists;
+import java.util.stream.StreamSupport;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -100,7 +100,7 @@ public class PersonService {
     }
 
     public List<Profile> getAll() {
-        return Lists.newArrayList(persons.findAll());
+        return StreamSupport.stream(persons.findAll().spliterator(), false).toList();
     }
 
     public List<Profile> getIn(List<String> keys) {
@@ -235,7 +235,7 @@ public class PersonService {
     public Profile loadFromHh(String linc) {
         Profile profile = null;
         try {
-            Document doc = Jsoup.connect(linc).validateTLSCertificates(false).get();
+            Document doc = Jsoup.connect(linc).get();
             String name = doc.getElementsByAttributeValue("data-qa", "resume-personal-name").first().text();
             String address = doc.getElementsByAttributeValue("data-qa", "resume-personal-address").first().text();
             String experience = doc.getElementsByClass("resume-block__title-text resume-block__title-text_sub").first().text();
@@ -280,9 +280,9 @@ public class PersonService {
             } else {
                 result = "Photo is very big!";
             }
-        } else if (!StringUtils.isEmpty(profile.getUrlHh())) {
+        } else if (StringUtils.hasLength(profile.getUrlHh())) {
             try {
-                byte[] bytes = Jsoup.connect(profile.getUrlHh()).validateTLSCertificates(false).ignoreContentType(true).execute().bodyAsBytes();
+                byte[] bytes = Jsoup.connect(profile.getUrlHh()).ignoreContentType(true).execute().bodyAsBytes();
                 String uuidFile = UUID.randomUUID().toString();
                 photo = new Photo(bytes, uuidFile);
                 if (profileDb.getPhoto() == null) {

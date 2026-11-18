@@ -3,9 +3,9 @@ package ru.checkdev.auth.controller;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
 public class ProfileControllerTest {
-    @MockBean
+    @MockitoBean
     private ProfileService profileService;
     @Autowired
     private MockMvc mockMvc;
@@ -64,7 +64,7 @@ public class ProfileControllerTest {
     @WithMockUser
     public void whenGetProfileByIdProfileNotFoundThenReturnStatusNotFound() throws Exception {
         when(profileService.findProfileByID(profileDTO1.getId())).thenReturn(Optional.empty());
-        mockMvc.perform(get("/profiles/{id}/", anyInt())
+        mockMvc.perform(get("/profiles/{id}", anyInt())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
