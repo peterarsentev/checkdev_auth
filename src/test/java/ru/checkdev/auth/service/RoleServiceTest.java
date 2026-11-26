@@ -8,8 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ru.checkdev.auth.domain.Role;
 import ru.checkdev.auth.repository.RoleRepository;
 
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 
@@ -26,9 +28,12 @@ public class RoleServiceTest {
 
     @Test
     public void whenAddRolesThenPersonHasRoles() {
-        Role role = new Role("ROLE_ADMIN");
-        when(roles.save(any(Role.class))).thenReturn(role);
-        Role result = this.service.save(new Role("ROLE_ADMIN"));
-        assertThat(role).usingRecursiveComparison().isEqualTo(result);
+        String name = "ROLE_" + UUID.randomUUID();
+        Role role = new Role(name);
+        Role savedRole = new Role(name);
+        savedRole.setId(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
+        when(roles.save(role)).thenReturn(savedRole);
+        Role result = this.service.save(role);
+        assertThat(result).usingRecursiveComparison().isEqualTo(savedRole);
     }
 }

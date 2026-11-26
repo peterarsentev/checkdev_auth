@@ -1,13 +1,12 @@
 package ru.checkdev.auth.repository;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import ru.checkdev.auth.dto.ProfileDTO;
 
-import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,11 +26,6 @@ public class PersonRepositoryTest {
     @Autowired
     private PersonRepository personRepository;
 
-    @BeforeEach
-    public void clearTable() {
-        entityManager.getEntityManager().createQuery("delete from profile").executeUpdate();
-    }
-
     @Test
     public void injectedComponentAreNotNull() {
         assertNotNull(entityManager);
@@ -40,13 +34,15 @@ public class PersonRepositoryTest {
 
     @Test
     public void whenFindProfileByIdThenReturnNull() {
-        ProfileDTO profileDTO = personRepository.findProfileById(-1);
+        int id = -ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
+        ProfileDTO profileDTO = personRepository.findProfileById(id);
         assertNull(profileDTO);
     }
 
     @Test
     public void whenFindProfileOrderByCreatedDescThenReturnEmptyList() {
+        entityManager.getEntityManager().createQuery("delete from profile").executeUpdate();
         var listProfileDTO = personRepository.findProfileOrderByCreatedDesc();
-        assertThat(listProfileDTO).isEqualTo(Collections.emptyList());
+        assertThat(listProfileDTO).isEmpty();
     }
 }

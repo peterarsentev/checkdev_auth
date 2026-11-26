@@ -1,29 +1,25 @@
 package ru.checkdev.auth.controller;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.checkdev.auth.AuthSrv;
 import ru.checkdev.auth.dto.ProfileDTO;
 import ru.checkdev.auth.service.ProfileService;
+import ru.checkdev.auth.web.controller.ProfileController;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 /**
  * CheckDev пробное собеседование
@@ -32,48 +28,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Dmitry Stepanov
  * @version 01:45
  */
-@SpringBootTest(classes = AuthSrv.class)
-@ExtendWith(SpringExtension.class)
-@AutoConfigureMockMvc
 public class ProfileControllerTest {
-    @MockitoBean
-    private ProfileService profileService;
-    @Autowired
-    private MockMvc mockMvc;
-
-    private final ProfileDTO profileDTO1 = new ProfileDTO(
-            1, "name1", "experience1", 1, null, null);
-    private final ProfileDTO profileDTO2 = new ProfileDTO(
-            2, "name2", "experience2", 2, null, null);
-
     @Test
-    @WithMockUser
     public void whenGetProfileByIdThenReturnStatusOK() throws Exception {
-        when(profileService.findProfileByID(profileDTO1.getId())).thenReturn(Optional.of(profileDTO1));
-        mockMvc.perform(get("/profiles/{id}", profileDTO1.getId())
+        ProfileService profileService = mock(ProfileService.class);
+        MockMvc mockMvc = standaloneSetup(new ProfileController(profileService)).build();
+        ProfileDTO profile = randomProfile(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
+        when(profileService.findProfileByID(profile.getId())).thenReturn(Optional.of(profile));
+        mockMvc.perform(get("/profiles/{id}", profile.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(profileDTO1.getId()))
-                .andExpect(jsonPath("$.username").value(profileDTO1.getUsername()))
-                .andExpect(jsonPath("$.experience").value(profileDTO1.getExperience()))
-                .andExpect(jsonPath("$.photoId").value(profileDTO1.getPhotoId()))
+                .andExpect(jsonPath("$.id").value(profile.getId()))
+                .andExpect(jsonPath("$.username").value(profile.getUsername()))
+                .andExpect(jsonPath("$.experience").value(profile.getExperience()))
+                .andExpect(jsonPath("$.photoId").value(profile.getPhotoId()))
                 .andDo(print());
     }
 
     @Test
-    @WithMockUser
-    public void whenGetProfileByIdProfileNotFoundThenReturnStatusNotFound() throws Exception {
-        when(profileService.findProfileByID(profileDTO1.getId())).thenReturn(Optional.empty());
-        mockMvc.perform(get("/profiles/{id}", anyInt())
+    public void whenGetProfileByIdProfileNotFoundThenReturnStatusNoContent() throws Exception {
+        ProfileService profileService = mock(ProfileService.class);
+        MockMvc mockMvc = standaloneSetup(new ProfileController(profileService)).build();
+        int id = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
+        when(profileService.findProfileByID(id)).thenReturn(Optional.empty());
+        mockMvc.perform(get("/profiles/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
+        verify(profileService).findProfileByID(id);
     }
 
     @Test
-    @WithMockUser
     public void whenGetAllProfilesOrderByCreateDescThenReturnStatusOkAndBody() throws Exception {
-        var profiles = List.of(profileDTO1, profileDTO2);
+        ProfileService profileService = mock(ProfileService.class);
+        MockMvc mockMvc = standaloneSetup(new ProfileController(profileService)).build();
+        int id = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
+        var profiles = List.of(randomProfile(id), randomProfile(id + 1));
         when(profileService.findProfilesOrderByCreatedDesc()).thenReturn(profiles);
         mockMvc.perform(get("/profiles/")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -83,12 +73,18 @@ public class ProfileControllerTest {
     }
 
     @Test
-    @WithMockUser
     public void whenGetAllProfilesOrderByCreateDescListEmptyThenReturnStatusNoContent() throws Exception {
-        when(profileService.findProfilesOrderByCreatedDesc()).thenReturn(Collections.emptyList());
+        ProfileService profileService = mock(ProfileService.class);
+        MockMvc mockMvc = standaloneSetup(new ProfileController(profileService)).build();
+        when(profileService.findProfilesOrderByCreatedDesc()).thenReturn(List.of());
         mockMvc.perform(get("/profiles/")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
+    }
+
+    private static ProfileDTO randomProfile(int id) {
+        return new ProfileDTO(id, "name-" + UUID.randomUUID(), "experience-" + UUID.randomUUID(),
+                ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE), null, null);
     }
 }

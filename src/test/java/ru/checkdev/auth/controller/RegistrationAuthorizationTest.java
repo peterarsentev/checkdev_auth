@@ -11,9 +11,11 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import ru.checkdev.auth.repository.PersonRepository;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class RegistrationAuthorizationTest {
-    private static final String PASSWORD = "Study-password-2026";
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -38,23 +39,27 @@ class RegistrationAuthorizationTest {
     private JwtEncoder encoder;
 
     @Test
+    @Transactional
     void registrationAndJsonLoginWithoutSession() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
+        String password = UUID.randomUUID().toString();
+        String username = "name-" + UUID.randomUUID();
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                        .content(registration(email, PASSWORD, true)))
+                        .content(registration(username, email, password, true)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.username").value(username))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.key").doesNotExist());
         var profile = persons.findByEmail(email);
         assertNotNull(profile);
         assertTrue(profile.isActive());
-        assertTrue(passwords.matches(PASSWORD, profile.getPassword()));
-        assertNotEquals(PASSWORD, profile.getPassword());
+        assertTrue(passwords.matches(password, profile.getPassword()));
+        assertNotEquals(password, profile.getPassword());
         assertTrue(profile.getRoles().isEmpty());
         mvc.perform(get("/user")).andExpect(status().isUnauthorized());
         var login = mvc.perform(post("/login").contentType(MediaType.APPLICATION_JSON)
-                        .content(credentials(email.toUpperCase(java.util.Locale.ROOT), PASSWORD)))
+                        .content(credentials(email.toUpperCase(Locale.ROOT), password)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().string("Cache-Control", "no-store"))
@@ -76,11 +81,14 @@ class RegistrationAuthorizationTest {
     }
 
     @Test
+    @Transactional
     void incorrectUnknownAndInactiveCredentialsHaveSameError() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
+        String password = UUID.randomUUID().toString();
+        String username = "name-" + UUID.randomUUID();
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                .content(registration(email, PASSWORD, true))).andExpect(status().isCreated());
-        for (var entry : Map.of(email, "wrong-password", UUID.randomUUID() + "@example.com", PASSWORD).entrySet()) {
+                .content(registration(username, email, password, true))).andExpect(status().isCreated());
+        for (var entry : Map.of(email, "wrong-" + password, UUID.randomUUID() + "@example.com", password).entrySet()) {
             mvc.perform(post("/login").contentType(MediaType.APPLICATION_JSON)
                             .content(credentials(entry.getKey(), entry.getValue())))
                     .andExpect(status().isUnauthorized())
@@ -91,14 +99,16 @@ class RegistrationAuthorizationTest {
         var profile = persons.findByEmail(email);
         profile.setActive(false);
         persons.save(profile);
-        mvc.perform(post("/login").contentType(MediaType.APPLICATION_JSON).content(credentials(email, PASSWORD)))
+        mvc.perform(post("/login").contentType(MediaType.APPLICATION_JSON).content(credentials(email, password)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.detail").value("Неверный email или пароль"));
     }
 
     @Test
     void malformedLoginReturnsBadRequest() throws Exception {
-        for (var body : new String[]{credentials("not-email", PASSWORD), credentials("anna@example.com", ""), "{}"}) {
+        String email = UUID.randomUUID() + "@example.com";
+        String password = UUID.randomUUID().toString();
+        for (var body : new String[]{credentials("not-email", password), credentials(email, ""), "{}"}) {
             mvc.perform(post("/login").contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.access_token").doesNotExist());
         }
@@ -109,10 +119,11 @@ class RegistrationAuthorizationTest {
         mvc.perform(get("/user").header("Authorization", "Bearer invalid-token"))
                 .andExpect(status().isUnauthorized());
         var now = Instant.now();
+        String email = UUID.randomUUID() + "@example.com";
         for (var claims : new JwtClaimsSet[]{
-                JwtClaimsSet.builder().subject("anna@example.com").issuer("http://localhost:9900")
+                JwtClaimsSet.builder().subject(email).issuer("http://localhost:9900")
                         .issuedAt(now.minusSeconds(1800)).expiresAt(now.minusSeconds(600)).build(),
-                JwtClaimsSet.builder().subject("anna@example.com").issuer("https://other-issuer.example")
+                JwtClaimsSet.builder().subject(email).issuer("https://other-issuer.example")
                         .issuedAt(now).expiresAt(now.plusSeconds(900)).build()}) {
             String token = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
             mvc.perform(get("/user").header("Authorization", "Bearer " + token))
@@ -132,17 +143,21 @@ class RegistrationAuthorizationTest {
     }
 
     @Test
+    @Transactional
     void duplicateEmailAndInvalidRegistration() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
+        String password = UUID.randomUUID().toString();
+        String username = "name-" + UUID.randomUUID();
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                        .content(registration(email, PASSWORD, true))).andExpect(status().isCreated());
+                        .content(registration(username, email, password, true))).andExpect(status().isCreated());
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                        .content(registration(email.toUpperCase(java.util.Locale.ROOT), PASSWORD, true)))
+                        .content(registration(username, email.toUpperCase(Locale.ROOT), password, true)))
                 .andExpect(status().isConflict());
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                        .content(registration("not-an-email", "short", true))).andExpect(status().isBadRequest());
+                        .content(registration(username, "not-an-email", "short", true)))
+                .andExpect(status().isBadRequest());
         mvc.perform(post("/registration").contentType(MediaType.APPLICATION_JSON)
-                        .content(registration(UUID.randomUUID() + "@example.com", PASSWORD, false)))
+                        .content(registration(username, UUID.randomUUID() + "@example.com", password, false)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -166,8 +181,8 @@ class RegistrationAuthorizationTest {
         return json.writeValueAsString(Map.of("email", email, "password", password));
     }
 
-    private String registration(String email, String password, boolean privacy) throws Exception {
-        return json.writeValueAsString(Map.of("username", "Анна", "email", email,
+    private String registration(String username, String email, String password, boolean privacy) throws Exception {
+        return json.writeValueAsString(Map.of("username", username, "email", email,
                 "password", password, "privacy", privacy));
     }
 }

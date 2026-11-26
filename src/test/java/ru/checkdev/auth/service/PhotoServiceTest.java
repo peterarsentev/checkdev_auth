@@ -10,6 +10,8 @@ import ru.checkdev.auth.repository.PhotoRepository;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,25 +24,34 @@ public class PhotoServiceTest {
     @InjectMocks
     private PhotoService photoService;
 
-    private static final Photo PHOTO_FOR_SAVE = new Photo(new byte[]{1, 2, 3}, "some photo");
-    private static final Photo PHOTO_IN_DB = new Photo(1, new byte[]{1, 2, 3}, "some photo");
-
     @Test
     void whenSavePhotoThenReturnPhotoWithId() {
-        when(photoRepository.save(PHOTO_FOR_SAVE)).thenReturn(PHOTO_IN_DB);
-        assertEquals(PHOTO_IN_DB, photoService.save(PHOTO_FOR_SAVE));
+        var random = ThreadLocalRandom.current();
+        byte[] content = new byte[3];
+        random.nextBytes(content);
+        String name = UUID.randomUUID() + ".jpg";
+        Photo photo = new Photo(content, name);
+        Photo savedPhoto = new Photo(random.nextInt(1, Integer.MAX_VALUE), content.clone(), name);
+        when(photoRepository.save(photo)).thenReturn(savedPhoto);
+        assertEquals(savedPhoto, photoService.save(photo));
     }
 
     @Test
     void whenFindPhotoById() {
-        when(photoRepository.findById(1)).thenReturn(Optional.of(PHOTO_IN_DB));
-        assertEquals(PHOTO_IN_DB, photoService.findImage(1));
+        var random = ThreadLocalRandom.current();
+        int id = random.nextInt(1, Integer.MAX_VALUE);
+        byte[] content = new byte[3];
+        random.nextBytes(content);
+        Photo photo = new Photo(id, content, UUID.randomUUID() + ".jpg");
+        when(photoRepository.findById(id)).thenReturn(Optional.of(photo));
+        assertEquals(photo, photoService.findImage(id));
     }
 
     @Test
     void whenNotFindPhotoById() {
-        when(photoRepository.findById(10)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> photoService.findImage(10));
+        int id = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
+        when(photoRepository.findById(id)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> photoService.findImage(id));
     }
 
 }
